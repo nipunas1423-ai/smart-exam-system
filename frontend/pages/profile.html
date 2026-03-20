@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — ExamPortal</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+  <button class="hamburger" id="hamburger">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="icon">🎓</div>
+        <div><h2>ExamPortal</h2><span>Student Panel</span></div>
+      </div>
+      <ul class="sidebar-nav">
+        <li onclick="window.location.href='student-dashboard.html'"><span class="nav-icon">📋</span> Available Exams</li>
+        <li onclick="window.location.href='student-dashboard.html'"><span class="nav-icon">📊</span> My Results</li>
+        <li class="active"><span class="nav-icon">👤</span> Profile</li>
+        <li class="logout" onclick="logout()"><span class="nav-icon">🚪</span> Logout</li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar" id="avatarInitial">S</div>
+          <div class="user-info">
+            <div class="name" id="sidebarName">Student</div>
+            <div class="role">Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-header"><h1>My Profile</h1><p>View and update your account</p></div>
+
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="profile-avatar" id="profileAvatar">S</div>
+          <div style="flex:1">
+            <div class="profile-name" id="profileName">Student</div>
+            <div class="profile-role">Student Account</div>
+          </div>
+          <button class="btn btn-outline" id="editToggleBtn" onclick="toggleEdit()" style="width:auto;padding:9px 18px;font-size:13px">✏️ Edit</button>
+        </div>
+
+        <!-- VIEW MODE -->
+        <div id="viewMode">
+          <div class="profile-row"><span class="key">👤 Full Name</span><span class="val" id="vName">—</span></div>
+          <div class="profile-row"><span class="key">📧 Email</span><span class="val" id="vEmail">—</span></div>
+          <div class="profile-row"><span class="key">🎂 Age</span><span class="val" id="vAge">—</span></div>
+          <div class="profile-row"><span class="key">🆔 Student ID</span><span class="val" id="vId">—</span></div>
+        </div>
+
+        <!-- EDIT MODE -->
+        <div id="editMode" style="display:none">
+          <div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:9px;padding:13px 16px;margin-bottom:18px;font-size:13px;color:var(--muted)">
+            ✏️ Changes are saved directly to the database.
+          </div>
+          <div class="form-group"><label>Full Name</label><input type="text" id="editName" placeholder="Your full name"></div>
+          <div class="form-group"><label>Email</label><input type="email" id="editEmail" placeholder="your@email.com"></div>
+          <div class="form-group"><label>Age</label><input type="number" id="editAge" placeholder="e.g. 21" min="18" max="60"></div>
+          <div class="form-group"><label>New Password <span style="color:var(--muted);font-weight:400">(leave blank to keep current)</span></label>
+            <input type="password" id="editPassword" placeholder="New password (optional)">
+          </div>
+          <div style="display:flex;gap:10px;margin-top:6px">
+            <button class="btn btn-primary" onclick="saveProfile()" id="saveBtn" style="flex:1">💾 Save Changes</button>
+            <button class="btn btn-outline" onclick="toggleEdit()" style="width:auto;padding:13px 18px">Cancel</button>
+          </div>
+          <div id="editMessage" class="message"></div>
+        </div>
+
+        <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+          <button class="btn btn-outline" onclick="window.location.href='student-dashboard.html'" style="width:auto;padding:10px 18px;font-size:13px">← Back to Dashboard</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/modal.js"></script>
+  <script>
+    initTheme(); initSidebar();
+
+    function loadProfile() {
+      const name  = localStorage.getItem("studentName")  || "—";
+      const email = localStorage.getItem("studentEmail") || "—";
+      const age   = localStorage.getItem("studentAge")   || "—";
+      const id    = localStorage.getItem("studentId")    || "—";
+      const init  = (name !== "—" ? name : "S").charAt(0).toUpperCase();
+      const displayName = name !== "—" ? name : (localStorage.getItem("username") || "Student");
+
+      document.getElementById("profileAvatar").textContent = init;
+      document.getElementById("avatarInitial").textContent = init;
+      document.getElementById("sidebarName").textContent   = displayName;
+      document.getElementById("profileName").textContent   = displayName;
+      document.getElementById("vName").textContent  = name;
+      document.getElementById("vEmail").textContent = email;
+      document.getElementById("vAge").textContent   = age !== "—" ? age + " years" : "—";
+      document.getElementById("vId").textContent    = id !== "—" ? "#" + id : "—";
+
+      document.getElementById("editName").value  = name !== "—" ? name : "";
+      document.getElementById("editEmail").value = email !== "—" ? email : "";
+      document.getElementById("editAge").value   = age !== "—" ? age : "";
+    }
+
+    function toggleEdit() {
+      const editing = document.getElementById("editMode").style.display !== "none";
+      document.getElementById("viewMode").style.display = editing ? "block" : "none";
+      document.getElementById("editMode").style.display = editing ? "none"  : "block";
+      document.getElementById("editToggleBtn").textContent = editing ? "✏️ Edit" : "✕ Cancel";
+      document.getElementById("editMessage").className = "message";
+    }
+
+    async function saveProfile() {
+      const studentId = localStorage.getItem("studentId");
+      const name      = document.getElementById("editName").value.trim();
+      const email     = document.getElementById("editEmail").value.trim();
+      const age       = parseInt(document.getElementById("editAge").value);
+      const password  = document.getElementById("editPassword").value;
+      const btn       = document.getElementById("saveBtn");
+      const msg       = document.getElementById("editMessage");
+
+      if (!studentId) { msg.textContent = "Student ID not found. Please log out and log in."; msg.className = "message error"; return; }
+      if (!name)      { msg.textContent = "Name cannot be empty."; msg.className = "message error"; return; }
+      if (!email)     { msg.textContent = "Email cannot be empty."; msg.className = "message error"; return; }
+      if (!age || age < 18 || age > 60) { msg.textContent = "Age must be between 18 and 60."; msg.className = "message error"; return; }
+
+      btn.textContent = "Saving..."; btn.disabled = true;
+
+      try {
+        const token = localStorage.getItem("token");
+        const body  = { name, email, age };
+        if (password && password.length >= 6) body.password = password;
+
+        const response = await fetch(`http://localhost:8091/students/${studentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) throw new Error("Update failed");
+
+        const updated = await response.json();
+        localStorage.setItem("studentName",  updated.name);
+        localStorage.setItem("studentEmail", updated.email);
+        localStorage.setItem("studentAge",   updated.age);
+
+        msg.textContent = "✅ Profile updated!"; msg.className = "message success";
+        loadProfile();
+        setTimeout(() => { toggleEdit(); msg.className = "message"; }, 1000);
+      } catch (err) {
+        msg.textContent = err.message || "Could not save. Is the backend running?";
+        msg.className = "message error";
+      }
+
+      btn.textContent = "💾 Save Changes"; btn.disabled = false;
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

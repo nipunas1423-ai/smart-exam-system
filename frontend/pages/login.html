@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — ExamPortal</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="brand">
+        <div class="brand-icon">🎓</div>
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Sign in to your ExamPortal account</p>
+      </div>
+
+      <div class="form-group">
+        <label>Login As</label>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <label id="lbl-student" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface2);border:2px solid var(--accent);border-radius:9px;cursor:pointer;font-size:14px;color:var(--text)">
+            <input type="radio" name="role" value="student" checked style="accent-color:var(--accent)"> 👨‍🎓 Student
+          </label>
+          <label id="lbl-admin" style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface2);border:2px solid var(--border);border-radius:9px;cursor:pointer;font-size:14px;color:var(--text)">
+            <input type="radio" name="role" value="admin" style="accent-color:var(--accent)"> ⚙️ Admin
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Username / Email</label>
+        <input type="text" id="username" placeholder="Enter your name or email" autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+
+      <button class="btn btn-primary" onclick="handleLogin()" id="loginBtn">Sign In →</button>
+      <div id="message" class="message"></div>
+
+      <div class="auth-footer">
+        New student? <a href="register.html">Register here</a><br>
+        <span style="font-size:12px">First time admin? <a href="admin-register.html">Setup admin account</a></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    initTheme();
+    document.addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
+
+    document.querySelectorAll('input[name="role"]').forEach(r => {
+      r.addEventListener("change", () => {
+        document.getElementById("lbl-student").style.borderColor =
+          document.querySelector('input[name="role"][value="student"]').checked ? "var(--accent)" : "var(--border)";
+        document.getElementById("lbl-admin").style.borderColor =
+          document.querySelector('input[name="role"][value="admin"]').checked ? "var(--accent)" : "var(--border)";
+      });
+    });
+
+    async function handleLogin() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const role     = document.querySelector('input[name="role"]:checked').value;
+      const btn      = document.getElementById("loginBtn");
+
+      if (!username) { showMsg("Please enter your username or email.", "error"); return; }
+      if (!password) { showMsg("Please enter your password.", "error"); return; }
+
+      btn.textContent = "Signing in..."; btn.disabled = true;
+
+      try {
+        const result = await login({ username, password, role });
+
+        localStorage.setItem("token",    result.token);
+        localStorage.setItem("username", username);
+        localStorage.setItem("role",     role);
+
+        if (role === "admin") {
+          if (result.teacherId) localStorage.setItem("teacherId", result.teacherId);
+          localStorage.setItem("adminName", result.adminName || username);
+          showMsg("Welcome Admin! Redirecting...", "success");
+          setTimeout(() => window.location.href = "admin-dashboard.html", 700);
+        } else {
+          // Server returns studentId directly — no extra lookup needed
+          if (result.studentId)    localStorage.setItem("studentId",    result.studentId);
+          if (result.studentName)  localStorage.setItem("studentName",  result.studentName);
+          if (result.studentEmail) localStorage.setItem("studentEmail", result.studentEmail);
+          showMsg("Login successful! Redirecting...", "success");
+          setTimeout(() => window.location.href = "student-dashboard.html", 700);
+        }
+      } catch (err) {
+        showMsg(err.message || "Login failed. Please try again.", "error");
+        btn.textContent = "Sign In →"; btn.disabled = false;
+      }
+    }
+
+    function showMsg(text, type) {
+      const el = document.getElementById("message");
+      el.textContent = text; el.className = "message " + type;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam — ExamPortal</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+
+  <div class="exam-page">
+    <div class="exam-topbar">
+      <div>
+        <h2 id="examTitleEl">Loading...</h2>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px" id="questionCount"></div>
+      </div>
+      <div class="timer-badge" id="timerBadge">⏱️ <span id="timer">--:--</span></div>
+    </div>
+
+    <div class="exam-layout">
+      <!-- Questions -->
+      <div>
+        <div id="examForm">
+          <div class="loading"><div class="spinner"></div><p>Loading questions...</p></div>
+        </div>
+        <div class="submit-bar">
+          <button class="btn-submit-exam" onclick="handleSubmit()" id="submitBtn">✅ Submit Exam</button>
+        </div>
+      </div>
+
+      <!-- Navigation panel -->
+      <div class="q-nav-panel" id="qNavPanel">
+        <h4>Questions</h4>
+        <div class="q-nav-grid" id="qNavGrid"></div>
+        <div class="q-nav-legend">
+          <div><span class="legend-dot" style="background:rgba(16,185,129,.4);border:1px solid var(--success)"></span>Answered</div>
+          <div><span class="legend-dot" style="background:var(--surface2);border:1px solid var(--border)"></span>Unanswered</div>
+          <div><span class="legend-dot" style="background:rgba(99,102,241,.3);border:1px solid var(--accent)"></span>Current</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/modal.js"></script>
+  <script src="../assets/js/timer.js"></script>
+  <script>
+    initTheme();
+
+    let questions  = [];
+    let answers    = {};   // questionId → selected key
+    let currentQ   = 0;
+
+    const examTitle = localStorage.getItem("examTitle") || "Exam";
+    document.getElementById("examTitleEl").textContent = examTitle;
+
+    async function loadQuestions() {
+      const examId    = localStorage.getItem("examId");
+      const container = document.getElementById("examForm");
+
+      if (!examId) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>No exam selected. <a href="student-dashboard.html" style="color:var(--accent2)">Go back</a></p></div>`;
+        return;
+      }
+
+      try {
+        questions = await getQuestions(examId);
+
+        if (!questions.length) {
+          container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No questions found for this exam.</p></div>`;
+          return;
+        }
+
+        document.getElementById("questionCount").textContent = `${questions.length} questions`;
+
+        renderAllQuestions();
+        buildNavPanel();
+
+      } catch (err) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Failed to load questions. Is the backend running?</p></div>`;
+      }
+    }
+
+    function renderAllQuestions() {
+      const optionKeys   = ["A","B","C","D"];
+      const optionFields = ["optionA","optionB","optionC","optionD"];
+
+      document.getElementById("examForm").innerHTML = questions.map((q, index) => `
+        <div class="question-card" id="qcard-${index}" style="animation-delay:${index * 0.04}s">
+          <div class="question-num">Question ${index + 1} of ${questions.length}</div>
+          <div class="question-text">${q.questionText}</div>
+          <div class="options-grid">
+            ${optionKeys.map((key, ki) => `
+              <label class="option-label" id="opt-${q.id}-${key}" onclick="selectOption(${q.id},'${key}',this,${index})">
+                <input type="radio" name="${q.id}" value="${key}">
+                <span class="option-key">${key}</span>
+                <span>${q[optionFields[ki]]}</span>
+              </label>`).join("")}
+          </div>
+        </div>`).join("");
+    }
+
+    function buildNavPanel() {
+      const grid = document.getElementById("qNavGrid");
+      grid.innerHTML = questions.map((q, i) => `
+        <button class="q-nav-btn ${i === 0 ? 'current' : ''}" id="nav-${i}" onclick="scrollToQuestion(${i})">${i + 1}</button>
+      `).join("");
+    }
+
+    function selectOption(questionId, key, labelEl, index) {
+      ["A","B","C","D"].forEach(k => {
+        document.getElementById(`opt-${questionId}-${k}`)?.classList.remove("selected");
+      });
+      labelEl.classList.add("selected");
+      const radio = document.querySelector(`input[name="${questionId}"][value="${key}"]`);
+      if (radio) radio.checked = true;
+
+      answers[questionId] = key;
+
+      // Update nav panel
+      const btn = document.getElementById(`nav-${index}`);
+      if (btn) { btn.classList.add("answered"); btn.classList.remove("current"); }
+    }
+
+    function scrollToQuestion(index) {
+      // Update current highlight on nav panel
+      document.querySelectorAll(".q-nav-btn").forEach(b => b.classList.remove("current"));
+      const btn = document.getElementById(`nav-${index}`);
+      if (btn && !btn.classList.contains("answered")) btn.classList.add("current");
+
+      const card = document.getElementById(`qcard-${index}`);
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    async function handleSubmit() {
+      const btn       = document.getElementById("submitBtn");
+      const answered  = Object.keys(answers).length;
+      const total     = questions.length;
+
+      // Review warning if unanswered questions remain
+      if (answered < total) {
+        const proceed = await showConfirm(
+          "Unanswered Questions",
+          `You've answered <strong>${answered} of ${total}</strong> questions.<br>Unanswered questions will score zero. Submit anyway?`,
+          "⚠️", "warning"
+        );
+        if (!proceed) return;
+      } else {
+        const confirmed = await showConfirm(
+          "Submit Exam",
+          `Are you sure you want to submit <strong>${examTitle}</strong>? You cannot change answers after submission.`,
+          "📝", "warning"
+        );
+        if (!confirmed) return;
+      }
+
+      btn.textContent = "Submitting..."; btn.disabled = true;
+
+      try {
+        const studentId = localStorage.getItem("studentId") || 1;
+        const result = await submitExam({
+          studentId: parseInt(studentId),
+          examId:    parseInt(localStorage.getItem("examId")),
+          answers:   answers
+        });
+
+        // Save result data for the result page
+        localStorage.setItem("score",           result.score);
+        localStorage.setItem("totalQuestions",  result.total);
+        localStorage.setItem("correctAnswers",  JSON.stringify(result.correctAnswers));
+        localStorage.setItem("myAnswers",       JSON.stringify(answers));
+        localStorage.setItem("examQuestions",   JSON.stringify(questions));
+
+        window.location.href = "result.html";
+
+      } catch (err) {
+        if (err.alreadyTaken) {
+          await showAlert("Already Submitted", `You already attempted this exam and scored <strong>${err.score}</strong> points.`, "🚫");
+          window.location.href = "student-dashboard.html";
+        } else {
+          await showAlert("Submission Failed", err.message || "Could not submit. Please try again.", "❌");
+          btn.textContent = "✅ Submit Exam"; btn.disabled = false;
+        }
+      }
+    }
+
+    loadQuestions();
+  </script>
+</body>
+</html>

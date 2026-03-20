@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — ExamPortal</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+  <button class="hamburger" id="hamburger">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="icon">⚙️</div>
+        <div><h2>ExamPortal</h2><span>Admin Panel</span></div>
+      </div>
+      <ul class="sidebar-nav">
+        <li class="active" onclick="switchTab('overview',this)"><span class="nav-icon">📊</span> Overview</li>
+        <li onclick="switchTab('exams',this)"><span class="nav-icon">📋</span> Manage Exams</li>
+        <li onclick="switchTab('questions',this)"><span class="nav-icon">❓</span> Questions</li>
+        <li onclick="switchTab('students',this)"><span class="nav-icon">👥</span> Students</li>
+        <li onclick="switchTab('results',this)"><span class="nav-icon">🏆</span> Results</li>
+        <li onclick="switchTab('analytics',this)"><span class="nav-icon">📈</span> Analytics</li>
+        <li onclick="switchTab('setup',this)"><span class="nav-icon">🔧</span> Setup</li>
+        <li class="logout" onclick="logout()"><span class="nav-icon">🚪</span> Logout</li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)" id="adminAvatar">A</div>
+          <div class="user-info">
+            <div class="name" id="adminName">Admin</div>
+            <div class="role">Administrator</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- OVERVIEW -->
+      <div id="tab-overview" class="tab-content active">
+        <div class="page-header"><h1>Admin Dashboard</h1><p>Live platform statistics</p></div>
+        <div class="stats-grid">
+          <div class="stat-card indigo"><div class="stat-icon">📋</div><div class="stat-value" id="statExams">—</div><div class="stat-label">Total Exams</div></div>
+          <div class="stat-card cyan"><div class="stat-icon">👥</div><div class="stat-value" id="statStudents">—</div><div class="stat-label">Students</div></div>
+          <div class="stat-card pink"><div class="stat-icon">🏆</div><div class="stat-value" id="statResults">—</div><div class="stat-label">Attempts</div></div>
+          <div class="stat-card amber"><div class="stat-icon">📈</div><div class="stat-value" id="statAvg">—</div><div class="stat-label">Avg Score</div></div>
+        </div>
+        <div class="section-card">
+          <h3>📋 All Exams</h3>
+          <div id="overviewExamList"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- MANAGE EXAMS -->
+      <div id="tab-exams" class="tab-content">
+        <div class="page-header"><h1>Manage Exams</h1><p>Create and delete exams</p></div>
+        <div class="section-card" style="margin-bottom:20px">
+          <h3>➕ Create New Exam</h3>
+          <div class="form-group"><label>Exam Title</label><input type="text" id="examTitle" placeholder="e.g. Java Basics"></div>
+          <div class="form-group"><label>Duration (minutes)</label><input type="number" id="examDuration" placeholder="e.g. 30" min="1"></div>
+          <button class="btn btn-primary" onclick="handleCreateExam()" id="createExamBtn" style="width:auto;padding:12px 28px">Create Exam →</button>
+          <div id="createExamMsg" class="message"></div>
+        </div>
+        <div class="section-card">
+          <h3>📋 All Exams</h3>
+          <div id="allExamsList"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- QUESTIONS -->
+      <div id="tab-questions" class="tab-content">
+        <div class="page-header"><h1>Questions</h1><p>Add, edit and delete questions per exam</p></div>
+        <div class="section-card">
+          <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+            <select id="qExamSelect" onchange="loadExamQuestions()" style="flex:1;min-width:200px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px">
+              <option value="">-- Select an exam --</option>
+            </select>
+            <button class="btn-sm btn-sm-out" onclick="refreshExamDropdown()">🔄 Refresh</button>
+          </div>
+          <div id="existingQs"></div>
+          <div id="addQForm" style="display:none">
+            <h3 style="margin-bottom:16px">➕ Add Question</h3>
+            <div class="q-block">
+              <div class="form-group"><label>Question Text</label><input type="text" id="qText" placeholder="Type your question..."></div>
+              <div class="options-2col">
+                <div class="form-group"><label>Option A</label><input type="text" id="qOptA" placeholder="Option A"></div>
+                <div class="form-group"><label>Option B</label><input type="text" id="qOptB" placeholder="Option B"></div>
+                <div class="form-group"><label>Option C</label><input type="text" id="qOptC" placeholder="Option C"></div>
+                <div class="form-group"><label>Option D</label><input type="text" id="qOptD" placeholder="Option D"></div>
+              </div>
+              <div class="correct-row">
+                Correct Answer:
+                <select id="qCorrect"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+              </div>
+            </div>
+            <button class="btn btn-success" onclick="handleAddQuestion()" id="addQBtn" style="width:auto;padding:12px 28px">Add Question ✓</button>
+            <div id="addQMsg" class="message"></div>
+          </div>
+          <div id="selectExamHint" style="color:var(--muted);font-size:14px;padding:16px 0">← Select an exam above to manage its questions.</div>
+        </div>
+      </div>
+
+      <!-- STUDENTS -->
+      <div id="tab-students" class="tab-content">
+        <div class="page-header"><h1>Students</h1><p>All registered students</p></div>
+        <div class="section-card">
+          <div id="studentsList"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div id="tab-results" class="tab-content">
+        <div class="page-header"><h1>All Results</h1><p>Every exam submission</p></div>
+        <div class="section-card">
+          <div id="allResultsList"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div id="tab-analytics" class="tab-content">
+        <div class="page-header"><h1>Analytics</h1><p>Score distribution and performance charts</p></div>
+        <div class="section-card" style="margin-bottom:20px">
+          <h3>📊 Average Score per Exam</h3>
+          <div class="chart-wrap"><canvas id="avgScoreChart"></canvas></div>
+        </div>
+        <div class="section-card">
+          <h3>📈 Total Attempts per Exam</h3>
+          <div class="chart-wrap"><canvas id="attemptsChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- SETUP -->
+      <div id="tab-setup" class="tab-content">
+        <div class="page-header"><h1>Admin Setup</h1><p>Register yourself as a teacher/admin</p></div>
+        <div class="section-card">
+          <div class="admin-hint">ℹ️ Register once. Then log in using your <strong>name or email</strong> as the username with the password you set here.</div>
+          <h3 style="margin-bottom:18px">Register Admin</h3>
+          <div class="form-group"><label>Name</label><input type="text" id="adminRegName" placeholder="Your name"></div>
+          <div class="form-group"><label>Email</label><input type="email" id="adminRegEmail" placeholder="admin@example.com"></div>
+          <div class="form-group"><label>Password</label><input type="password" id="adminRegPass" placeholder="Set a password"></div>
+          <button class="btn btn-primary" onclick="handleAdminRegister()" id="adminRegBtn" style="width:auto;padding:12px 28px">Register Admin →</button>
+          <div id="adminRegMsg" class="message"></div>
+          <div style="margin-top:28px;border-top:1px solid var(--border);padding-top:22px">
+            <h3 style="margin-bottom:14px">Registered Admins</h3>
+            <div id="teachersList"><div class="loading"><div class="spinner"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Edit Question Modal -->
+  <div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:999;display:none;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:32px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto">
+      <h3 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:22px">✏️ Edit Question</h3>
+      <div class="form-group"><label>Question Text</label><input type="text" id="editQText" placeholder="Question"></div>
+      <div class="options-2col">
+        <div class="form-group"><label>Option A</label><input type="text" id="editOptA"></div>
+        <div class="form-group"><label>Option B</label><input type="text" id="editOptB"></div>
+        <div class="form-group"><label>Option C</label><input type="text" id="editOptC"></div>
+        <div class="form-group"><label>Option D</label><input type="text" id="editOptD"></div>
+      </div>
+      <div class="correct-row">Correct: <select id="editCorrect"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+      <div style="display:flex;gap:10px;margin-top:22px">
+        <button class="btn btn-primary" onclick="saveEditQuestion()" style="flex:1">Save Changes</button>
+        <button class="btn btn-outline" onclick="closeEditModal()" style="width:auto;padding:13px 20px">Cancel</button>
+      </div>
+      <div id="editQMsg" class="message"></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/modal.js"></script>
+  <script>
+    initTheme(); initSidebar();
+
+    const adminName = localStorage.getItem("adminName") || localStorage.getItem("username") || "Admin";
+    document.getElementById("adminName").textContent  = adminName;
+    document.getElementById("adminAvatar").textContent = adminName.charAt(0).toUpperCase();
+
+    let editingQuestionId = null;
+    let avgChart = null, attemptsChart = null;
+
+    function switchTab(name, el) {
+      document.querySelectorAll(".sidebar-nav li").forEach(l => l.classList.remove("active"));
+      if (el) el.classList.add("active");
+      document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+      document.getElementById("tab-" + name).classList.add("active");
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("sidebarOverlay").classList.remove("open");
+
+      if (name === "overview")   loadOverview();
+      if (name === "exams")      loadAllExams();
+      if (name === "questions")  refreshExamDropdown();
+      if (name === "students")   loadStudents();
+      if (name === "results")    loadAllResults();
+      if (name === "analytics")  loadAnalytics();
+      if (name === "setup")      loadTeachers();
+    }
+
+    // ── OVERVIEW ──
+    async function loadOverview() {
+      try {
+        const [exams, students, results] = await Promise.all([getExams(), getAllStudents(), getAllResults()]);
+        document.getElementById("statExams").textContent    = exams.length;
+        document.getElementById("statStudents").textContent = students.length;
+        document.getElementById("statResults").textContent  = results.length;
+        const avg = results.length ? Math.round(results.reduce((a,r) => a + r.score, 0) / results.length) : 0;
+        document.getElementById("statAvg").textContent = avg;
+
+        document.getElementById("overviewExamList").innerHTML = exams.length === 0
+          ? `<div class="empty-state"><div class="empty-icon">📭</div><p>No exams yet.</p></div>`
+          : `<table class="data-table"><thead><tr><th>ID</th><th>Title</th><th>Duration</th></tr></thead><tbody>
+              ${exams.map(e => `<tr><td>#${e.id}</td><td><strong>${e.title}</strong></td><td>${e.duration} min</td></tr>`).join("")}
+             </tbody></table>`;
+      } catch { }
+    }
+
+    // ── EXAMS ──
+    async function handleCreateExam() {
+      const title    = document.getElementById("examTitle").value.trim();
+      const duration = parseInt(document.getElementById("examDuration").value);
+      const btn      = document.getElementById("createExamBtn");
+      const msg      = document.getElementById("createExamMsg");
+
+      if (!title)              { showMsg2(msg,"Please enter a title.","error"); return; }
+      if (!duration || duration < 1) { showMsg2(msg,"Please enter a valid duration.","error"); return; }
+
+      btn.textContent = "Creating..."; btn.disabled = true;
+      try {
+        const teacherId = parseInt(localStorage.getItem("teacherId") || "1");
+        const exam = await createExam({ title, duration, teacherId });
+        showMsg2(msg, `✅ "${exam.title}" created! (ID #${exam.id})`, "success");
+        document.getElementById("examTitle").value = "";
+        document.getElementById("examDuration").value = "";
+        loadAllExams();
+      } catch (err) { showMsg2(msg, err.message, "error"); }
+      btn.textContent = "Create Exam →"; btn.disabled = false;
+    }
+
+    async function loadAllExams() {
+      const container = document.getElementById("allExamsList");
+      try {
+        const exams = await getExams();
+        container.innerHTML = exams.length === 0
+          ? `<div class="empty-state"><div class="empty-icon">📭</div><p>No exams yet.</p></div>`
+          : `<table class="data-table"><thead><tr><th>ID</th><th>Title</th><th>Duration</th><th>Actions</th></tr></thead><tbody>
+              ${exams.map(e => `
+                <tr>
+                  <td>#${e.id}</td>
+                  <td><strong>${e.title}</strong></td>
+                  <td>${e.duration} min</td>
+                  <td><div class="actions-col">
+                    <button class="btn-sm btn-sm-pri" onclick="goAddQuestions(${e.id},'${e.title.replace(/'/g,"\\'")}')">Add Questions</button>
+                    <button class="btn-sm btn-sm-del" onclick="handleDeleteExam(${e.id},'${e.title.replace(/'/g,"\\'")}')">🗑 Delete</button>
+                  </div></td>
+                </tr>`).join("")}
+             </tbody></table>`;
+      } catch { container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Failed to load exams.</p></div>`; }
+    }
+
+    async function handleDeleteExam(id, title) {
+      const ok = await showConfirm("Delete Exam", `Delete <strong>"${title}"</strong>? All its questions will also be removed. This cannot be undone.`, "🗑️", "danger");
+      if (!ok) return;
+      try {
+        await deleteExam(id);
+        await showAlert("Deleted", `"${title}" has been deleted.`, "✅");
+        loadAllExams(); loadOverview();
+      } catch (err) { await showAlert("Error", err.message, "❌"); }
+    }
+
+    function goAddQuestions(examId, examTitle) {
+      switchTab("questions", document.querySelector('.sidebar-nav li:nth-child(3)'));
+      setTimeout(() => {
+        const sel = document.getElementById("qExamSelect");
+        if (sel) { sel.value = examId; loadExamQuestions(); }
+      }, 150);
+    }
+
+    // ── QUESTIONS ──
+    async function refreshExamDropdown() {
+      try {
+        const exams = await getExams();
+        const sel = document.getElementById("qExamSelect");
+        const cur = sel.value;
+        sel.innerHTML = `<option value="">-- Select an exam --</option>` +
+          exams.map(e => `<option value="${e.id}">${e.title} (#${e.id})</option>`).join("");
+        if (cur) sel.value = cur;
+      } catch {}
+    }
+
+    async function loadExamQuestions() {
+      const examId = document.getElementById("qExamSelect").value;
+      const hint   = document.getElementById("selectExamHint");
+      const form   = document.getElementById("addQForm");
+      const exist  = document.getElementById("existingQs");
+
+      if (!examId) { hint.style.display = "block"; form.style.display = "none"; exist.innerHTML = ""; return; }
+      hint.style.display = "none"; form.style.display = "block";
+      exist.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+
+      try {
+        const questions = await getQuestions(examId);
+        if (!questions.length) {
+          exist.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0 20px">No questions yet. Add your first one below!</div>`;
+          return;
+        }
+        exist.innerHTML = `
+          <div style="margin-bottom:20px">
+            <div style="font-size:12px;font-weight:600;color:var(--accent2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">${questions.length} Question(s)</div>
+            ${questions.map((q, i) => `
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
+                  <div style="font-weight:600;font-size:13px;flex:1">${i+1}. ${q.questionText}</div>
+                  <div class="actions-col" style="flex-direction:row;flex-shrink:0">
+                    <button class="btn-sm btn-sm-edit" onclick="openEditModal(${JSON.stringify(q).replace(/"/g,'&quot;')})">✏️</button>
+                    <button class="btn-sm btn-sm-del" onclick="handleDeleteQuestion(${q.id},'Q${i+1}')">🗑</button>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:var(--muted)">
+                  <span ${q.correctAnswer==='A'?'style="color:var(--success);font-weight:600"':''}>A: ${q.optionA}</span>
+                  <span ${q.correctAnswer==='B'?'style="color:var(--success);font-weight:600"':''}>B: ${q.optionB}</span>
+                  <span ${q.correctAnswer==='C'?'style="color:var(--success);font-weight:600"':''}>C: ${q.optionC}</span>
+                  <span ${q.correctAnswer==='D'?'style="color:var(--success);font-weight:600"':''}>D: ${q.optionD}</span>
+                </div>
+                <div style="margin-top:6px;font-size:11px;color:var(--success)">✓ Correct: ${q.correctAnswer}</div>
+              </div>`).join("")}
+          </div>`;
+      } catch { exist.innerHTML = `<div style="color:var(--muted);font-size:13px">Could not load questions.</div>`; }
+    }
+
+    async function handleAddQuestion() {
+      const examId  = document.getElementById("qExamSelect").value;
+      const qText   = document.getElementById("qText").value.trim();
+      const optA    = document.getElementById("qOptA").value.trim();
+      const optB    = document.getElementById("qOptB").value.trim();
+      const optC    = document.getElementById("qOptC").value.trim();
+      const optD    = document.getElementById("qOptD").value.trim();
+      const correct = document.getElementById("qCorrect").value;
+      const btn     = document.getElementById("addQBtn");
+      const msg     = document.getElementById("addQMsg");
+
+      if (!examId)                          { showMsg2(msg,"Select an exam first.","error"); return; }
+      if (!qText||!optA||!optB||!optC||!optD) { showMsg2(msg,"Fill in the question and all 4 options.","error"); return; }
+
+      btn.textContent = "Adding..."; btn.disabled = true;
+      try {
+        await addQuestion({ examId:parseInt(examId), questionText:qText, optionA:optA, optionB:optB, optionC:optC, optionD:optD, correctAnswer:correct });
+        showMsg2(msg, "✅ Question added!", "success");
+        ["qText","qOptA","qOptB","qOptC","qOptD"].forEach(id => document.getElementById(id).value = "");
+        loadExamQuestions();
+      } catch (err) { showMsg2(msg, err.message, "error"); }
+      btn.textContent = "Add Question ✓"; btn.disabled = false;
+    }
+
+    function openEditModal(q) {
+      editingQuestionId = q.id;
+      document.getElementById("editQText").value  = q.questionText;
+      document.getElementById("editOptA").value   = q.optionA;
+      document.getElementById("editOptB").value   = q.optionB;
+      document.getElementById("editOptC").value   = q.optionC;
+      document.getElementById("editOptD").value   = q.optionD;
+      document.getElementById("editCorrect").value = q.correctAnswer;
+      document.getElementById("editModal").style.display = "flex";
+    }
+
+    function closeEditModal() {
+      document.getElementById("editModal").style.display = "none";
+      editingQuestionId = null;
+    }
+
+    async function saveEditQuestion() {
+      if (!editingQuestionId) return;
+      const data = {
+        questionText: document.getElementById("editQText").value.trim(),
+        optionA:      document.getElementById("editOptA").value.trim(),
+        optionB:      document.getElementById("editOptB").value.trim(),
+        optionC:      document.getElementById("editOptC").value.trim(),
+        optionD:      document.getElementById("editOptD").value.trim(),
+        correctAnswer:document.getElementById("editCorrect").value,
+        examId:       parseInt(document.getElementById("qExamSelect").value)
+      };
+      const msg = document.getElementById("editQMsg");
+      try {
+        await updateQuestion(editingQuestionId, data);
+        showMsg2(msg, "✅ Question updated!", "success");
+        setTimeout(() => { closeEditModal(); loadExamQuestions(); }, 800);
+      } catch (err) { showMsg2(msg, err.message, "error"); }
+    }
+
+    async function handleDeleteQuestion(id, label) {
+      const ok = await showConfirm("Delete Question", `Delete <strong>${label}</strong>? This cannot be undone.`, "🗑️", "danger");
+      if (!ok) return;
+      try {
+        await deleteQuestion(id);
+        loadExamQuestions();
+      } catch (err) { await showAlert("Error", err.message, "❌"); }
+    }
+
+    // ── STUDENTS ──
+    async function loadStudents() {
+      const container = document.getElementById("studentsList");
+      try {
+        const students = await getAllStudents();
+        container.innerHTML = students.length === 0
+          ? `<div class="empty-state"><div class="empty-icon">👥</div><p>No students registered.</p></div>`
+          : `<table class="data-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Age</th></tr></thead><tbody>
+              ${students.map(s => `<tr><td>#${s.id}</td><td><strong>${s.name}</strong></td><td>${s.email}</td><td>${s.age}</td></tr>`).join("")}
+             </tbody></table>`;
+      } catch { container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Failed.</p></div>`; }
+    }
+
+    // ── ALL RESULTS ──
+    async function loadAllResults() {
+      const container = document.getElementById("allResultsList");
+      try {
+        const [results, exams, students] = await Promise.all([getAllResults(), getExams(), getAllStudents()]);
+        const eMap = {}; exams.forEach(e => eMap[e.id] = e.title);
+        const sMap = {}; students.forEach(s => sMap[s.id] = s.name);
+        container.innerHTML = results.length === 0
+          ? `<div class="empty-state"><div class="empty-icon">🏆</div><p>No results yet.</p></div>`
+          : `<table class="data-table"><thead><tr><th>#</th><th>Student</th><th>Exam</th><th>Score</th></tr></thead><tbody>
+              ${results.map((r,i) => `
+                <tr><td>${i+1}</td><td>${sMap[r.studentId]||"#"+r.studentId}</td><td>${eMap[r.examId]||"#"+r.examId}</td><td><strong style="color:var(--accent2)">${r.score}</strong></td></tr>
+              `).join("")}
+             </tbody></table>`;
+      } catch { container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Failed.</p></div>`; }
+    }
+
+    // ── ANALYTICS ──
+    async function loadAnalytics() {
+      try {
+        const [exams, results] = await Promise.all([getExams(), getAllResults()]);
+        const labels = exams.map(e => e.title);
+
+        const avgScores = exams.map(e => {
+          const ers = results.filter(r => r.examId === e.id);
+          return ers.length ? Math.round(ers.reduce((a,r) => a + r.score, 0) / ers.length) : 0;
+        });
+        const attempts = exams.map(e => results.filter(r => r.examId === e.id).length);
+
+        const isDark  = document.documentElement.getAttribute("data-theme") !== "light";
+        const textCol = isDark ? "#94a3b8" : "#64748b";
+        const gridCol = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
+
+        const defaults = { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: textCol, font:{size:11} }, grid: { color: gridCol } },
+            y: { ticks: { color: textCol, font:{size:11} }, grid: { color: gridCol }, beginAtZero: true }
+          }
+        };
+
+        if (avgChart) avgChart.destroy();
+        avgChart = new Chart(document.getElementById("avgScoreChart"), {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{ data: avgScores, backgroundColor: "rgba(99,102,241,0.7)", borderColor: "#6366f1", borderWidth: 1, borderRadius: 6 }]
+          },
+          options: { ...defaults, plugins: { ...defaults.plugins, tooltip: { callbacks: { label: ctx => `Avg: ${ctx.raw} pts` } } } }
+        });
+
+        if (attemptsChart) attemptsChart.destroy();
+        attemptsChart = new Chart(document.getElementById("attemptsChart"), {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [{ data: attempts, backgroundColor: "rgba(34,211,238,0.7)", borderColor: "#22d3ee", borderWidth: 1, borderRadius: 6 }]
+          },
+          options: { ...defaults, plugins: { ...defaults.plugins, tooltip: { callbacks: { label: ctx => `${ctx.raw} attempts` } } } }
+        });
+      } catch (err) { console.error(err); }
+    }
+
+    // ── ADMIN SETUP ──
+    async function handleAdminRegister() {
+      const name = document.getElementById("adminRegName").value.trim();
+      const email = document.getElementById("adminRegEmail").value.trim();
+      const password = document.getElementById("adminRegPass").value.trim();
+      const btn = document.getElementById("adminRegBtn");
+      const msg = document.getElementById("adminRegMsg");
+
+      if (!name||!email||!password) { showMsg2(msg,"Fill in all fields.","error"); return; }
+      btn.textContent = "Registering..."; btn.disabled = true;
+      try {
+        const teacher = await registerTeacher({ name, email, password });
+        localStorage.setItem("teacherId", teacher.id);
+        localStorage.setItem("adminName", teacher.name);
+        document.getElementById("adminName").textContent  = teacher.name;
+        document.getElementById("adminAvatar").textContent = teacher.name.charAt(0).toUpperCase();
+        showMsg2(msg, `✅ Admin "${teacher.name}" registered!`, "success");
+        document.getElementById("adminRegName").value = "";
+        document.getElementById("adminRegEmail").value = "";
+        document.getElementById("adminRegPass").value = "";
+        loadTeachers();
+      } catch (err) { showMsg2(msg, err.message, "error"); }
+      btn.textContent = "Register Admin →"; btn.disabled = false;
+    }
+
+    async function loadTeachers() {
+      const container = document.getElementById("teachersList");
+      try {
+        const teachers = await getAllTeachers();
+        container.innerHTML = teachers.length === 0
+          ? `<div style="color:var(--muted);font-size:14px">No admins registered yet.</div>`
+          : `<table class="data-table"><thead><tr><th>ID</th><th>Name</th><th>Email</th></tr></thead><tbody>
+              ${teachers.map(t => `<tr><td>#${t.id}</td><td><strong>${t.name}</strong></td><td>${t.email}</td></tr>`).join("")}
+             </tbody></table>`;
+      } catch { }
+    }
+
+    function showMsg2(el, text, type) { el.textContent = text; el.className = "message " + type; }
+
+    // Init
+    loadOverview();
+  </script>
+</body>
+</html>

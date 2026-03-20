@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Result — ExamPortal</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+
+  <div class="result-page">
+
+    <!-- Score summary card -->
+    <div class="result-card">
+      <div class="result-icon" id="resultIcon">🏆</div>
+      <h1>Exam Complete!</h1>
+      <p style="color:var(--muted);font-size:13px;margin-top:4px" id="examNameLabel"></p>
+      <div class="score-display" id="scoreDisplay">—</div>
+      <div class="score-label" id="scoreLabel">Score</div>
+      <div style="margin-bottom:24px" id="scoreBadge"></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" onclick="window.location.href='student-dashboard.html'">← Back to Dashboard</button>
+      </div>
+    </div>
+
+    <!-- Full question breakdown -->
+    <div class="breakdown-section" id="breakdownSection"></div>
+
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    initTheme();
+
+    const score          = parseInt(localStorage.getItem("score") || "0");
+    const total          = parseInt(localStorage.getItem("totalQuestions") || "0");
+    const examTitle      = localStorage.getItem("examTitle") || "Exam";
+    const correctAnswers = JSON.parse(localStorage.getItem("correctAnswers") || "{}");
+    const myAnswers      = JSON.parse(localStorage.getItem("myAnswers") || "{}");
+    const questions      = JSON.parse(localStorage.getItem("examQuestions") || "[]");
+
+    // Score summary
+    document.getElementById("scoreDisplay").textContent = score;
+    document.getElementById("examNameLabel").textContent = examTitle;
+
+    if (total > 0) {
+      const pct = Math.round((score / total) * 100);
+      document.getElementById("scoreLabel").textContent = `${score} out of ${total} correct (${pct}%)`;
+
+      let icon = "🏆", badgeHtml = "";
+      if (pct >= 80)      { icon = "🏆"; badgeHtml = `<span class="badge badge-green">Excellent!</span>`; }
+      else if (pct >= 60) { icon = "👍"; badgeHtml = `<span class="badge badge-blue">Good Job</span>`; }
+      else                { icon = "📚"; badgeHtml = `<span class="badge" style="background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.2)">Keep Practicing</span>`; }
+
+      document.getElementById("resultIcon").textContent = icon;
+      document.getElementById("scoreBadge").innerHTML   = badgeHtml;
+    }
+
+    // Full breakdown — show every question with correct/wrong highlighting
+    if (questions.length > 0) {
+      const optionKeys   = ["A","B","C","D"];
+      const optionFields = ["optionA","optionB","optionC","optionD"];
+
+      const html = questions.map((q, i) => {
+        const correctKey = String(correctAnswers[q.id] || "");
+        const myKey      = String(myAnswers[q.id]      || "");
+        const isCorrect  = myKey === correctKey;
+
+        const optsHtml = optionKeys.map((key, ki) => {
+          let cls = "neutral", badge = "";
+          if (key === correctKey)       { cls = "correct-ans"; badge = `<span class="opt-badge ans">✓ Correct</span>`; }
+          if (key === myKey && !isCorrect && myKey) { cls = "wrong-ans";   badge = `<span class="opt-badge your">Your answer</span>`; }
+          if (key === myKey && isCorrect)           badge = `<span class="opt-badge your">Your answer</span>`;
+          return `<div class="breakdown-opt ${cls}">
+            <span class="option-key" style="width:22px;height:22px;font-size:11px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:700;background:var(--surface);border:1px solid var(--border);flex-shrink:0">${key}</span>
+            <span>${q[optionFields[ki]]}</span>${badge}
+          </div>`;
+        }).join("");
+
+        const statusIcon = !myKey ? "⬜" : isCorrect ? "✅" : "❌";
+
+        return `
+          <div class="breakdown-card" style="animation-delay:${i * 0.04}s">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <span style="font-size:20px">${statusIcon}</span>
+              <span style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Question ${i + 1}</span>
+              ${!myKey ? `<span class="badge badge-red" style="margin-left:auto">Not Answered</span>` : ""}
+            </div>
+            <div class="q-text">${q.questionText}</div>
+            ${optsHtml}
+          </div>`;
+      }).join("");
+
+      document.getElementById("breakdownSection").innerHTML = `
+        <h2 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:20px;text-align:center">
+          Question Breakdown
+        </h2>${html}`;
+    }
+  </script>
+</body>
+</html>

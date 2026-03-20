@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Setup — ExamPortal</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="brand">
+        <div class="brand-icon">⚙️</div>
+        <h2>Admin Setup</h2>
+        <p class="subtitle">Register your admin account — do this once before logging in</p>
+      </div>
+
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="e.g. Admin Kumar">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="admin@example.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Choose a strong password">
+      </div>
+
+      <button class="btn btn-primary" onclick="handleRegister()" id="btn">
+        Register Admin →
+      </button>
+      <div id="message" class="message"></div>
+
+      <div class="auth-footer">
+        Already registered? <a href="login.html">Login here</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    initTheme();
+
+    async function handleRegister() {
+      const name     = document.getElementById("name").value.trim();
+      const email    = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const btn      = document.getElementById("btn");
+
+      if (!name || !email || !password) { showMsg("Please fill in all fields.", "error"); return; }
+      if (password.length < 6)          { showMsg("Password must be at least 6 characters.", "error"); return; }
+
+      btn.textContent = "Registering..."; btn.disabled = true;
+
+      try {
+        // Call /teachers/register directly — no auth token needed (public endpoint)
+        const response = await fetch("http://localhost:8091/teachers/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.message || err.error || "Registration failed");
+        }
+
+        const teacher = await response.json();
+        showMsg(`✅ Admin "${teacher.name}" registered! Redirecting to login...`, "success");
+        setTimeout(() => window.location.href = "login.html", 1500);
+
+      } catch (err) {
+        showMsg(err.message || "Registration failed. Is the backend running?", "error");
+        btn.textContent = "Register Admin →"; btn.disabled = false;
+      }
+    }
+
+    function showMsg(text, type) {
+      const el = document.getElementById("message");
+      el.textContent = text; el.className = "message " + type;
+    }
+  </script>
+</body>
+</html>

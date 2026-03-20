@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — ExamPortal</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+  <button class="hamburger" id="hamburger">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="icon">🎓</div>
+        <div><h2>ExamPortal</h2><span>Student Panel</span></div>
+      </div>
+      <ul class="sidebar-nav">
+        <li class="active" id="nav-exams"   onclick="showSection('exams',this)"><span class="nav-icon">📋</span> Available Exams</li>
+        <li id="nav-results"                onclick="showSection('results',this)"><span class="nav-icon">📊</span> My Results</li>
+        <li id="nav-leaderboard"            onclick="showSection('leaderboard',this)"><span class="nav-icon">🏆</span> Leaderboard</li>
+        <li onclick="window.location.href='profile.html'"><span class="nav-icon">👤</span> Profile</li>
+        <li class="logout" onclick="logout()"><span class="nav-icon">🚪</span> Logout</li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar" id="avatarInitial">S</div>
+          <div class="user-info">
+            <div class="name" id="sidebarName">Student</div>
+            <div class="role">Student</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- EXAMS -->
+      <div id="section-exams">
+        <div class="page-header">
+          <h1>Available Exams</h1>
+          <p>Select an exam to begin. Already-taken exams are disabled.</p>
+        </div>
+        <div class="search-bar">
+          <input class="search-input" id="searchInput" placeholder="🔍 Search exams..." oninput="filterExams()">
+          <select class="filter-select" id="filterDuration" onchange="filterExams()">
+            <option value="">All Durations</option>
+            <option value="30">≤ 30 min</option>
+            <option value="60">≤ 60 min</option>
+            <option value="999">60+ min</option>
+          </select>
+        </div>
+        <div id="examList">
+          <div class="loading"><div class="spinner"></div><p>Loading exams...</p></div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div id="section-results" style="display:none">
+        <div class="page-header"><h1>My Results</h1><p>Your exam history and scores</p></div>
+        <div class="section-card">
+          <div id="resultsList">
+            <div class="loading"><div class="spinner"></div><p>Loading...</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEADERBOARD -->
+      <div id="section-leaderboard" style="display:none">
+        <div class="page-header"><h1>Leaderboard</h1><p>Top scores per exam</p></div>
+        <div class="form-group" style="max-width:340px;margin-bottom:20px">
+          <label>Select Exam</label>
+          <select class="filter-select" id="lbExamSelect" onchange="loadLeaderboard()" style="width:100%">
+            <option value="">-- Choose an exam --</option>
+          </select>
+        </div>
+        <div id="leaderboardContent">
+          <div class="empty-state"><div class="empty-icon">🏆</div><p>Select an exam to see the leaderboard</p></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/modal.js"></script>
+  <script>
+    initTheme(); initSidebar();
+
+    const storedName = localStorage.getItem("studentName") || localStorage.getItem("username") || "Student";
+    document.getElementById("sidebarName").textContent = storedName;
+    document.getElementById("avatarInitial").textContent = storedName.charAt(0).toUpperCase();
+
+    let allExams = [];
+    let takenExamIds = new Set();
+
+    function showSection(name, el) {
+      document.querySelectorAll(".sidebar-nav li").forEach(li => li.classList.remove("active"));
+      if (el) el.classList.add("active");
+      ["exams","results","leaderboard"].forEach(s => {
+        document.getElementById("section-" + s).style.display = s === name ? "block" : "none";
+      });
+      if (name === "results")     loadResults();
+      if (name === "leaderboard") initLeaderboard();
+      // Close mobile sidebar
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("sidebarOverlay").classList.remove("open");
+    }
+
+    // ── EXAMS ──
+    async function loadExams() {
+      const container = document.getElementById("examList");
+      try {
+        allExams = await getExams();
+
+        // Find which exams this student already took
+        const studentId = localStorage.getItem("studentId");
+        if (studentId) {
+          try {
+            const results = await getResultsByStudent(studentId);
+            takenExamIds = new Set(results.map(r => r.examId));
+          } catch(e) {}
+        }
+
+        renderExams(allExams);
+      } catch (err) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load exams. Is the backend running?</p></div>`;
+      }
+    }
+
+    function renderExams(exams) {
+      const container = document.getElementById("examList");
+      if (!exams.length) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No exams available yet.</p></div>`;
+        return;
+      }
+      container.innerHTML = `<div class="exam-grid">${exams.map((e, i) => {
+        const taken = takenExamIds.has(e.id);
+        return `
+        <div class="exam-card ${taken ? 'already-taken' : ''}" style="animation-delay:${i * 0.06}s">
+          <h3>${e.title}</h3>
+          <div class="exam-meta">
+            <span class="exam-tag">⏱️ ${e.duration} min</span>
+            <span class="exam-tag">📝 Exam #${e.id}</span>
+            ${taken ? `<span class="exam-tag" style="color:var(--success)">✓ Completed</span>` : ""}
+          </div>
+          <button class="btn-start" ${taken ? "disabled" : ""} onclick="${taken ? "" : `startExam(${e.id},'${e.title.replace(/'/g,"\\'")}',${e.duration})`}">
+            ${taken ? "Already Taken" : "Start Exam →"}
+          </button>
+        </div>`;
+      }).join("")}</div>`;
+    }
+
+    function filterExams() {
+      const q   = document.getElementById("searchInput").value.toLowerCase();
+      const dur = parseInt(document.getElementById("filterDuration").value || "999");
+      const filtered = allExams.filter(e => {
+        const matchTitle = e.title.toLowerCase().includes(q);
+        const matchDur   = dur === 999 ? e.duration > 60 : e.duration <= dur;
+        return matchTitle && matchDur;
+      });
+      renderExams(filtered);
+    }
+
+    function startExam(id, title, duration) {
+      localStorage.setItem("examId",       id);
+      localStorage.setItem("examTitle",    title);
+      localStorage.setItem("examDuration", duration); // for per-exam timer
+      window.location.href = "exam-instructions.html";
+    }
+
+    // ── RESULTS ──
+    async function loadResults() {
+      const container = document.getElementById("resultsList");
+      let studentId = localStorage.getItem("studentId");
+
+      if (!studentId) {
+        // Fallback: search by name
+        try {
+          const students = await getAllStudents();
+          const username = (localStorage.getItem("studentName") || localStorage.getItem("username") || "").toLowerCase();
+          const match = students.find(s => s.name.toLowerCase().includes(username) || s.email.toLowerCase() === username);
+          if (match) { studentId = match.id; localStorage.setItem("studentId", match.id); }
+        } catch(e) {}
+      }
+
+      try {
+        let results = studentId ? await getResultsByStudent(studentId) : await getAllResults();
+        if (!results.length) {
+          container.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>No results yet. Take an exam!</p></div>`;
+          return;
+        }
+
+        let examMap = {};
+        try { const exams = await getExams(); exams.forEach(e => examMap[e.id] = e.title); } catch(e) {}
+
+        container.innerHTML = `
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Exam</th><th>Score</th><th>Status</th></tr></thead>
+            <tbody>${results.map((r, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td><strong>${examMap[r.examId] || "Exam #" + r.examId}</strong></td>
+                <td><strong style="color:var(--accent2)">${r.score}</strong></td>
+                <td><span class="badge badge-green">Completed</span></td>
+              </tr>`).join("")}
+            </tbody>
+          </table>`;
+      } catch (err) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load results.</p></div>`;
+      }
+    }
+
+    // ── LEADERBOARD ──
+    async function initLeaderboard() {
+      const sel = document.getElementById("lbExamSelect");
+      try {
+        const exams = await getExams();
+        sel.innerHTML = `<option value="">-- Choose an exam --</option>` +
+          exams.map(e => `<option value="${e.id}">${e.title}</option>`).join("");
+      } catch(e) {}
+    }
+
+    async function loadLeaderboard() {
+      const examId  = document.getElementById("lbExamSelect").value;
+      const container = document.getElementById("leaderboardContent");
+      if (!examId) return;
+
+      container.innerHTML = `<div class="loading"><div class="spinner"></div><p>Loading...</p></div>`;
+
+      try {
+        const [results, students] = await Promise.all([getResultsByExam(examId), getAllStudents()]);
+        const studentMap = {};
+        students.forEach(s => studentMap[s.id] = s.name);
+
+        const sorted = [...results].sort((a, b) => b.score - a.score).slice(0, 10);
+
+        if (!sorted.length) {
+          container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No results for this exam yet.</p></div>`;
+          return;
+        }
+
+        const ranks = ["🥇","🥈","🥉"];
+        const rankClass = ["gold","silver","bronze"];
+
+        container.innerHTML = sorted.map((r, i) => {
+          const name    = studentMap[r.studentId] || "Student #" + r.studentId;
+          const initial = name.charAt(0).toUpperCase();
+          const rankEl  = i < 3 ? `<span class="lb-rank ${rankClass[i]}">${ranks[i]}</span>` : `<span class="lb-rank">${i+1}</span>`;
+          return `
+            <div class="lb-row">
+              ${rankEl}
+              <div class="lb-avatar">${initial}</div>
+              <div class="lb-name">${name}</div>
+              <div class="lb-score">${r.score} pts</div>
+            </div>`;
+        }).join("");
+      } catch (err) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load leaderboard.</p></div>`;
+      }
+    }
+
+    loadExams();
+  </script>
+</body>
+</html>

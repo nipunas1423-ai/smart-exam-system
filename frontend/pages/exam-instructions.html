@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exam Instructions — ExamPortal</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️</button>
+
+  <div class="instructions-page">
+    <div class="instructions-card">
+      <div style="font-size:48px;margin-bottom:16px">📋</div>
+      <h1 id="examTitleEl">Loading...</h1>
+      <p class="exam-sub" id="examSubEl">Read the instructions carefully before starting</p>
+
+      <div id="infoRows"></div>
+
+      <ul class="rules-list">
+        <li><span class="rule-icon">⏱️</span> The timer starts the moment you click "Start Exam" and cannot be paused.</li>
+        <li><span class="rule-icon">📝</span> All questions are multiple choice — select one answer per question.</li>
+        <li><span class="rule-icon">🚫</span> You can only attempt each exam once. Choose carefully.</li>
+        <li><span class="rule-icon">🔄</span> You can change your answer anytime before submitting.</li>
+        <li><span class="rule-icon">✅</span> Submit before the timer runs out — unanswered questions score zero.</li>
+        <li><span class="rule-icon">📊</span> Your results and correct answers are shown immediately after submission.</li>
+      </ul>
+
+      <div style="display:flex;gap:12px;margin-top:28px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="beginExam()" id="startBtn" style="flex:1">
+          🚀 Start Exam — Timer Begins Now
+        </button>
+        <button class="btn btn-outline" onclick="window.location.href='student-dashboard.html'" style="width:auto;padding:13px 20px">
+          ← Back
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/api.js"></script>
+  <script>
+    initTheme();
+
+    const examId    = localStorage.getItem("examId");
+    const examTitle = localStorage.getItem("examTitle") || "Exam";
+    const duration  = localStorage.getItem("examDuration") || "30";
+
+    document.getElementById("examTitleEl").textContent = examTitle;
+    document.getElementById("examSubEl").textContent   = `Read the instructions carefully before starting`;
+
+    // Load question count
+    (async () => {
+      let qCount = "—";
+      try {
+        const qs = await getQuestions(examId);
+        qCount = qs.length;
+      } catch(e) {}
+
+      document.getElementById("infoRows").innerHTML = `
+        <div class="info-row"><span class="k">📝 Exam</span><span class="v">${examTitle}</span></div>
+        <div class="info-row"><span class="k">⏱️ Duration</span><span class="v">${duration} minutes</span></div>
+        <div class="info-row"><span class="k">❓ Questions</span><span class="v">${qCount}</span></div>
+        <div class="info-row"><span class="k">📊 Scoring</span><span class="v">1 point per correct answer</span></div>
+        <div class="info-row"><span class="k">🔁 Attempts</span><span class="v">1 attempt only</span></div>
+      `;
+    })();
+
+    function beginExam() {
+      document.getElementById("startBtn").textContent = "Starting...";
+      document.getElementById("startBtn").disabled = true;
+      window.location.href = "exam.html";
+    }
+  </script>
+</body>
+</html>
