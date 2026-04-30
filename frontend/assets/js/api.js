@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:8091";
+const BASE_URL = "https://smart-exam-system-production.up.railway.app/";
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
