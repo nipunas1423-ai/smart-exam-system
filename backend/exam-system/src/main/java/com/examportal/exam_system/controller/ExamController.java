@@ -85,8 +85,8 @@ public class ExamController {
 
         // ✅ save result
         Result result = new Result();
-        result.setStudentId(submission.getStudentId());
-        result.setExamId(submission.getExamId());
+        result.setStudentId(String.valueOf(submission.getStudentId()));
+        result.setExamId(String.valueOf(submission.getExamId()));
         result.setScore(score);
 
         Result saved = resultRepository.save(result);

@@ -9,8 +9,8 @@ public class Result {
     @Id
     private String id;
 
-    private Long studentId;
-    private Long examId;
+    private String studentId;
+    private String examId;
     private int score;
 
     public Result(){}
@@ -23,19 +23,19 @@ public class Result {
         this.id = id;
     }
 
-    public Long getStudentId(){
+    public String getStudentId(){
         return studentId;
     }
 
-    public void setStudentId(Long studentId){
+    public void setStudentId(String studentId){
         this.studentId = studentId;
     }
 
-    public Long getExamId(){
+    public String getExamId(){
         return examId;
     }
 
-    public void setExamId(Long examId){
+    public void setExamId(String examId){
         this.examId = examId;
     }
 
