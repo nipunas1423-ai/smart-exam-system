@@ -22,7 +22,6 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // These paths are fully public — skip JWT validation entirely
     private static final List<String> PUBLIC_PATHS = List.of(
             "/auth/login",
             "/students/register",
@@ -32,59 +31,59 @@ public class JwtFilter extends OncePerRequestFilter {
             "/v3/api-docs"
     );
 
-  @Override
-protected void doFilterInternal(HttpServletRequest request,
-                                HttpServletResponse response,
-                                FilterChain filterChain)
-        throws ServletException, IOException {
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                   HttpServletResponse response,
+                                   FilterChain filterChain)
+            throws ServletException, IOException {
 
-    // ✅ VERY IMPORTANT: allow preflight requests
-    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-        response.setStatus(HttpServletResponse.SC_OK);
-        filterChain.doFilter(request, response);
-        return;
-    }
-
-    String path = request.getServletPath();
-
-    // Skip filter completely for public routes
-    for (String pub : PUBLIC_PATHS) {
-        if (path.startsWith(pub)) {
+        // ✅ CRITICAL FIX: allow preflight
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
-    }
 
-    String authHeader = request.getHeader("Authorization");
+        String path = request.getServletPath();
 
-    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-        filterChain.doFilter(request, response);
-        return;
-    }
-
-    String token = authHeader.substring(7);
-
-    try {
-        String username = jwtUtil.extractUsername(token);
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            if (jwtUtil.validateToken(token)) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                username, null, Collections.emptyList()
-                        );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        for (String pub : PUBLIC_PATHS) {
+            if (path.startsWith(pub)) {
+                filterChain.doFilter(request, response);
+                return;
             }
         }
 
-    } catch (Exception e) {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
-        return;
-    }
+        String authHeader = request.getHeader("Authorization");
 
-    filterChain.doFilter(request, response);
-}
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = authHeader.substring(7);
+
+        try {
+            String username = jwtUtil.extractUsername(token);
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (jwtUtil.validateToken(token)) {
+
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    username, null, Collections.emptyList()
+                            );
+
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
+            return;
+        }
+
+        filterChain.doFilter(request, response);
+    }
 }
