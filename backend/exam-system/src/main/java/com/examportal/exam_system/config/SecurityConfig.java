@@ -21,7 +21,6 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
-    // ✅ THIS fixes your startup error
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -33,7 +32,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
 
-            // ✅ CORS properly wired
+            // ✅ VERY IMPORTANT
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
             .sessionManagement(session ->
@@ -68,13 +67,17 @@ public class SecurityConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
+        // ✅ EXACT Netlify URL (NO trailing slash)
         config.setAllowedOriginPatterns(List.of(
-            "https://aquamarine-moxie-647794.netlify.app",
-            "http://localhost:5500"
+            "https://smartexamsystem.netlify.app"
         ));
 
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of(
+            "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        ));
+
         config.setAllowedHeaders(List.of("*"));
+
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
