@@ -32,54 +32,59 @@ public class JwtFilter extends OncePerRequestFilter {
             "/v3/api-docs"
     );
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+  @Override
+protected void doFilterInternal(HttpServletRequest request,
+                                HttpServletResponse response,
+                                FilterChain filterChain)
+        throws ServletException, IOException {
 
-        String path = request.getServletPath();
+    // ✅ VERY IMPORTANT: allow preflight requests
+    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+        response.setStatus(HttpServletResponse.SC_OK);
+        filterChain.doFilter(request, response);
+        return;
+    }
 
-        // Skip filter completely for public routes
-        for (String pub : PUBLIC_PATHS) {
-            if (path.startsWith(pub)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-        }
+    String path = request.getServletPath();
 
-        String authHeader = request.getHeader("Authorization");
-
-        // No token on a protected route — let Spring Security handle the 403
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+    // Skip filter completely for public routes
+    for (String pub : PUBLIC_PATHS) {
+        if (path.startsWith(pub)) {
             filterChain.doFilter(request, response);
             return;
         }
+    }
 
-        String token = authHeader.substring(7);
+    String authHeader = request.getHeader("Authorization");
 
-        try {
-            String username = jwtUtil.extractUsername(token);
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        filterChain.doFilter(request, response);
+        return;
+    }
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                if (jwtUtil.validateToken(token)) {
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(
-                                    username, null, Collections.emptyList()
-                            );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
+    String token = authHeader.substring(7);
+
+    try {
+        String username = jwtUtil.extractUsername(token);
+
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (jwtUtil.validateToken(token)) {
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                username, null, Collections.emptyList()
+                        );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-
-        } catch (Exception e) {
-            // Invalid/expired token — return 401 JSON
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
-            return;
         }
 
-        filterChain.doFilter(request, response);
+    } catch (Exception e) {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
+        return;
     }
+
+    filterChain.doFilter(request, response);
+}
 }
