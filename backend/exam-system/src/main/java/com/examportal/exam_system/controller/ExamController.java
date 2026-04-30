@@ -14,10 +14,7 @@ import com.examportal.exam_system.repository.QuestionRepository;
 import com.examportal.exam_system.repository.ResultRepository;
 import com.examportal.exam_system.exception.ResourceNotFoundException;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/exams")
@@ -38,9 +35,12 @@ public class ExamController {
     }
 
     @DeleteMapping("/{id}")
-    public String deleteExam(@PathVariable Long id) {
+    public String deleteExam(@PathVariable String id) {
+
         Exam exam = examRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Exam not found with id: " + id));
+
         examRepository.delete(exam);
         return "Exam deleted successfully";
     }
@@ -48,29 +48,42 @@ public class ExamController {
     @PostMapping("/attempt")
     public ResponseEntity<?> attemptExam(@RequestBody ExamSubmission submission) {
 
-        // Prevent retaking — check if result already exists for this student+exam
-        Optional<Result> existing = resultRepository.findByStudentIdAndExamId(
-                submission.getStudentId(), submission.getExamId());
+        // ✅ check duplicate attempt
+        Optional<Result> existing =
+                resultRepository.findByStudentIdAndExamId(
+                        submission.getStudentId(),
+                        submission.getExamId()
+                );
 
         if (existing.isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "You have already attempted this exam",
-                                 "score", existing.get().getScore()));
+                    .body(Map.of(
+                            "error", "You have already attempted this exam",
+                            "score", existing.get().getScore()
+                    ));
         }
 
-        List<Question> questions = questionRepository.findByExamId(submission.getExamId());
+        // ✅ FIX: STORE QUESTIONS PROPERLY
+        List<Question> questions =
+                questionRepository.findByExamId(String.valueOf(submission.getExamId()));
 
         int score = 0;
-        Map<Long, String> correctAnswers = new HashMap<>();
+        Map<String, String> correctAnswers = new HashMap<>();
 
         for (Question q : questions) {
+
             correctAnswers.put(q.getId(), q.getCorrectAnswer());
-            String studentAnswer = submission.getAnswers().get(q.getId());
-            if (studentAnswer != null && studentAnswer.equals(q.getCorrectAnswer())) {
+
+            String studentAnswer =
+                    submission.getAnswers().get(q.getId());
+
+            if (studentAnswer != null &&
+                studentAnswer.equals(q.getCorrectAnswer())) {
                 score++;
             }
         }
 
+        // ✅ save result
         Result result = new Result();
         result.setStudentId(submission.getStudentId());
         result.setExamId(submission.getExamId());
@@ -78,14 +91,14 @@ public class ExamController {
 
         Result saved = resultRepository.save(result);
 
-        // Return result + correct answers for the breakdown screen
+        // ✅ response
         Map<String, Object> response = new HashMap<>();
-        response.put("id",             saved.getId());
-        response.put("studentId",       saved.getStudentId());
-        response.put("examId",          saved.getExamId());
-        response.put("score",           saved.getScore());
-        response.put("total",           questions.size());
-        response.put("correctAnswers",  correctAnswers);
+        response.put("id", saved.getId());
+        response.put("studentId", saved.getStudentId());
+        response.put("examId", saved.getExamId());
+        response.put("score", saved.getScore());
+        response.put("total", questions.size());
+        response.put("correctAnswers", correctAnswers);
 
         return ResponseEntity.ok(response);
     }

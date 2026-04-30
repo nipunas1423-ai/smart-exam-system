@@ -21,11 +21,11 @@ public class ResultService {
         return resultRepository.findAll();
     }
 
-    public List<Result> getResultsByStudent(Long studentId) {
+    public List<Result> getResultsByStudent(String studentId) {
         return resultRepository.findByStudentId(studentId);
     }
 
-    public List<Result> getResultsByExam(Long examId) {
+    public List<Result> getResultsByExam(String examId) {
         return resultRepository.findByExamId(examId);
     }
 }

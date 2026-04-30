@@ -1,7 +1,6 @@
 package com.examportal.exam_system.config;
 
 import com.examportal.exam_system.security.JwtFilter;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +20,6 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
-    // BCrypt bean — inject anywhere you need to hash or verify passwords
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -36,11 +34,13 @@ public class SecurityConfig {
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/auth/login").permitAll()
-                    .requestMatchers("/students/register").permitAll()
-                    .requestMatchers("/teachers/register").permitAll()
-                    .requestMatchers("/hello").permitAll()
                     .requestMatchers(
+                            "/",
+                            "/error",
+                            "/auth/**",
+                            "/students/**",
+                            "/teachers/**",
+                            "/hello",
                             "/swagger-ui/**",
                             "/swagger-ui.html",
                             "/v3/api-docs/**"
@@ -54,6 +54,7 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
                 "http://127.0.0.1:5500",
@@ -65,6 +66,7 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }

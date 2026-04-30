@@ -1,13 +1,13 @@
 package com.examportal.exam_system.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
+@Document(collection = "questions")
 public class Question {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;   // Mongo uses String/ObjectId
 
     private String questionText;
 
@@ -18,13 +18,13 @@ public class Question {
 
     private String correctAnswer;
 
-    private Long examId;
+    private String examId;  // changed to String (to match Mongo IDs)
 
     public Question(){}
 
-    public Long getId() { return id; }
+    public String getId() { return id; }
 
-    public void setId(Long id) { this.id = id; }
+    public void setId(String id) { this.id = id; }
 
     public String getQuestionText() { return questionText; }
 
@@ -50,7 +50,7 @@ public class Question {
 
     public void setCorrectAnswer(String correctAnswer) { this.correctAnswer = correctAnswer; }
 
-    public Long getExamId() { return examId; }
+    public String getExamId() { return examId; }
 
-    public void setExamId(Long examId) { this.examId = examId; }
+    public void setExamId(String examId) { this.examId = examId; }
 }

@@ -27,29 +27,32 @@ public class QuestionController {
     }
 
     @GetMapping("/exam/{examId}")
-    public List<Question> getQuestionsByExam(@PathVariable Long examId) {
+    public List<Question> getQuestionsByExam(@PathVariable String examId) {   // ✅ String
         return questionRepository.findByExamId(examId);
     }
 
     // Edit a question
     @PutMapping("/{id}")
-    public Question updateQuestion(@PathVariable Long id, @RequestBody Question updated) {
+    public Question updateQuestion(@PathVariable String id, @RequestBody Question updated) {  // ✅ String
         Question q = questionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + id));
+
         q.setQuestionText(updated.getQuestionText());
         q.setOptionA(updated.getOptionA());
         q.setOptionB(updated.getOptionB());
         q.setOptionC(updated.getOptionC());
         q.setOptionD(updated.getOptionD());
         q.setCorrectAnswer(updated.getCorrectAnswer());
+
         return questionRepository.save(q);
     }
 
     // Delete a question
     @DeleteMapping("/{id}")
-    public String deleteQuestion(@PathVariable Long id) {
+    public String deleteQuestion(@PathVariable String id) {   // ✅ String
         Question q = questionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + id));
+
         questionRepository.delete(q);
         return "Question deleted successfully";
     }

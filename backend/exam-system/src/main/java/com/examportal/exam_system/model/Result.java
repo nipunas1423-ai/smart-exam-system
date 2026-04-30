@@ -1,13 +1,13 @@
 package com.examportal.exam_system.model;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import jakarta.persistence.*;
 
-@Entity
+@Document
 public class Result {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     private Long studentId;
     private Long examId;
@@ -15,11 +15,11 @@ public class Result {
 
     public Result(){}
 
-    public Long getId(){
+    public String getId(){
         return id;
     }
 
-    public void setId(Long id){
+    public void setId(String id){
         this.id = id;
     }
 

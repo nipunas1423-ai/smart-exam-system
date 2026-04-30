@@ -1,27 +1,25 @@
 package com.examportal.exam_system.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
+@Document(collection = "exams")
 public class Exam {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;   // Mongo uses String/ObjectId
 
     private String title;
-
     private int duration;
-
-    private Long teacherId;
+    private String teacherId;
 
     public Exam(){}
 
-    public Long getId(){
+    public String getId(){
         return id;
     }
 
-    public void setId(Long id){
+    public void setId(String id){
         this.id = id;
     }
 
@@ -41,11 +39,11 @@ public class Exam {
         this.duration = duration;
     }
 
-    public Long getTeacherId(){
+    public String getTeacherId(){
         return teacherId;
     }
 
-    public void setTeacherId(Long teacherId){
+    public void setTeacherId(String teacherId){
         this.teacherId = teacherId;
     }
 }

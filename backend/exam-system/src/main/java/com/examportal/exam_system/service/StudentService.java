@@ -42,12 +42,12 @@ public class StudentService {
         return studentRepository.findAll();
     }
 
-    public Student getStudentById(Long id) {
+    public Student getStudentById(String id) {
         return studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + id));
     }
 
-    public Student updateStudent(Long id, StudentDTO studentDTO) {
+    public Student updateStudent(String id, StudentDTO studentDTO) {
         Student existing = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + id));
 
@@ -63,7 +63,7 @@ public class StudentService {
         return studentRepository.save(existing);
     }
 
-    public void deleteStudent(Long id) {
+    public void deleteStudent(String id) {
         Student existing = studentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + id));
         studentRepository.delete(existing);

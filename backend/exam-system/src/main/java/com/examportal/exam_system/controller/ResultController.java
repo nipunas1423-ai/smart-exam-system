@@ -25,11 +25,11 @@ public List<Result> getResults(){
     return resultService.getAllResults();
 }
 @GetMapping("/student/{studentId}")
-public List<Result> getResultsByStudent(@PathVariable Long studentId){
+public List<Result> getResultsByStudent(@PathVariable String studentId){
     return resultService.getResultsByStudent(studentId);
 }
 @GetMapping("/exam/{examId}")
-public List<Result> getResultsByExam(@PathVariable Long examId){
+public List<Result> getResultsByExam(@PathVariable String examId){
     return resultService.getResultsByExam(examId);
 }
     
