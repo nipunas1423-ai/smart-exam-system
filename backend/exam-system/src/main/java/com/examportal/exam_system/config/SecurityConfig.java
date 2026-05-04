@@ -74,7 +74,7 @@ public class SecurityConfig {
 
         // ✅ YOUR REAL NETLIFY FRONTEND URL
         config.setAllowedOriginPatterns(List.of(
-            "https://69f8523fc1439acb1bb2a87f--sunny-pithivier-c5529d.netlify.app"
+            "https://69f85b6f2779d9e938ae05e5--radiant-kleicha-1011cf.netlify.app"
         ));
 
         config.setAllowedMethods(List.of(
