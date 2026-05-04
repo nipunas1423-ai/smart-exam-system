@@ -32,31 +32,36 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
 
-            // ✅ VERY IMPORTANT
+            // ✅ Enable CORS
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             .authorizeHttpRequests(auth -> auth
-                // ✅ Allow preflight
+
+                // ✅ Allow preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                // ✅ Public endpoints
                 .requestMatchers(
                     "/",
                     "/error",
                     "/auth/**",
                     "/students/**",
                     "/teachers/**",
+                    "/exams/**",   // ✅ THIS FIXES YOUR ISSUE
                     "/hello",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**"
                 ).permitAll()
 
+                // 🔒 Everything else needs authentication
                 .anyRequest().authenticated()
             )
 
+            // ✅ JWT filter
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -67,7 +72,7 @@ public class SecurityConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ EXACT Netlify URL (NO trailing slash)
+        // ✅ Your frontend URL
         config.setAllowedOriginPatterns(List.of(
             "https://smartexamsystem.netlify.app"
         ));
