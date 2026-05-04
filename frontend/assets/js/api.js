@@ -1,4 +1,4 @@
-const BASE_URL = "https://smart-exam-system-production.up.railway.app";
+const BASE_URL = "https://smart-exam-system-171k.onrender.com";
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
