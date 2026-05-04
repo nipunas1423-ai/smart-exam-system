@@ -50,18 +50,18 @@ public class SecurityConfig {
                     "/auth/**",
                     "/students/**",
                     "/teachers/**",
-                    "/exams/**",   // ✅ THIS FIXES YOUR ISSUE
+                    "/exams/**",
                     "/hello",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**"
                 ).permitAll()
 
-                // 🔒 Everything else needs authentication
+                // 🔒 Secure everything else
                 .anyRequest().authenticated()
             )
 
-            // ✅ JWT filter
+            // JWT filter
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -72,9 +72,9 @@ public class SecurityConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ Your frontend URL
+        // ✅ YOUR REAL NETLIFY FRONTEND URL
         config.setAllowedOriginPatterns(List.of(
-            "https://smartexamsystem.netlify.app"
+            "https://69f8523fc1439acb1bb2a87f--sunny-pithivier-c5529d.netlify.app"
         ));
 
         config.setAllowedMethods(List.of(
