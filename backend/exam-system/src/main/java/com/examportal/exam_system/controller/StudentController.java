@@ -18,33 +18,38 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
-    // Register — hashing is handled inside StudentService
+    // ✅ REGISTER STUDENT
     @PostMapping("/register")
     public Student registerStudent(@Valid @RequestBody StudentDTO studentDTO) {
         return studentService.registerStudent(studentDTO);
     }
 
+    // ✅ GET ALL STUDENTS
     @GetMapping
     public List<Student> getAllStudents() {
         return studentService.getAllStudents();
     }
 
-    @GetMapping("/{id}")
+    // ✅ GET STUDENT BY ID (SAFE VERSION)
+    @GetMapping("/id/{id}")
     public Student getStudentById(@PathVariable String id) {
         return studentService.getStudentById(id);
     }
 
-    @PostMapping
+    // ✅ ADD STUDENT
+    @PostMapping("/add")
     public Student addStudent(@Valid @RequestBody Student student) {
         return studentService.saveStudent(student);
     }
 
-    @PutMapping("/{id}")
+    // ✅ UPDATE STUDENT
+    @PutMapping("/update/{id}")
     public Student updateStudent(@PathVariable String id, @Valid @RequestBody StudentDTO studentDTO) {
         return studentService.updateStudent(id, studentDTO);
     }
 
-    @DeleteMapping("/{id}")
+    // ✅ DELETE STUDENT
+    @DeleteMapping("/delete/{id}")
     public String deleteStudent(@PathVariable String id) {
         studentService.deleteStudent(id);
         return "Student deleted successfully";
