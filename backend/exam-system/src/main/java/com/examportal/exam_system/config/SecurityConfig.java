@@ -32,62 +32,56 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
 
-            // ✅ Enable CORS
+            // ✅ VERY IMPORTANT
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             .authorizeHttpRequests(auth -> auth
-
-                // ✅ Allow preflight requests
+                // ✅ Allow preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // ✅ Public endpoints
                 .requestMatchers(
                     "/",
                     "/error",
                     "/auth/**",
                     "/students/**",
                     "/teachers/**",
-                    "/exams/**",
                     "/hello",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**"
                 ).permitAll()
 
-                // 🔒 Secure everything else
                 .anyRequest().authenticated()
             )
 
-            // JWT filter
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+   @Bean
+public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration config = new CorsConfiguration();
+    CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ YOUR REAL NETLIFY FRONTEND URL
-        config.setAllowedOriginPatterns(List.of(
-            "https://tiny-parfait-27ec7d.netlify.app/"
-        ));
+    config.setAllowedOrigins(List.of(
+        "https://smartexamsystem.netlify.app"
+    ));
 
-        config.setAllowedMethods(List.of(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS"
-        ));
+    config.setAllowedMethods(List.of(
+        "GET", "POST", "PUT", "DELETE", "OPTIONS"
+    ));
 
-        config.setAllowedHeaders(List.of("*"));
+    config.setAllowedHeaders(List.of("*"));
 
-        config.setAllowCredentials(true);
+    config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
 
-        return source;
-    }
+    return source;
+}
 }
